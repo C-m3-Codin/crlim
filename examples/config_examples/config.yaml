@@ -1,0 +1,7 @@
+rate_limits:
+  www.google.com:
+    requests_per_second: 10
+    burst_size: 5
+  www.youtube.com:
+    requests_per_second: 5
+    burst_size: 2
