@@ -27,7 +27,6 @@ func NewSiteLimiter(policies map[string]RateLimitPolicy) *SiteLimiter {
 func (s *SiteLimiter) AllowRequest(host string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	if limiter, exists := s.limiters[host]; exists {
 		return limiter.Allow()
 	}
