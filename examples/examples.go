@@ -9,12 +9,9 @@ import (
 )
 
 func main() {
-	policies := map[string]crlim.RateLimitPolicy{
-		"www.google.com":  {RequestsPerSecond: 3, BurstSize: 2},
-		"www.youtube.com": {RequestsPerSecond: 3, BurstSize: 2},
-	}
+	config, err := crlim.LoadConfig("./config_examples/config.json")
 
-	client := crlim.NewRateLimitedClient(policies)
+	client := crlim.NewRateLimitedClient(config.RateLimits)
 
 	req, _ := http.NewRequest("GET", "https://www.google.com", nil)
 	resp, err := client.Do(req)
