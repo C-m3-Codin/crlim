@@ -1,41 +1,44 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
-	"sync"
+	"time"
 
-	"github.com/c-m3-codin/crlim"
+	"github.com/c-m3-codin/crlim/config"
+	"github.com/c-m3-codin/crlim/ratelimiter"
 )
 
 func main() {
-	policies := map[string]crlim.RateLimitPolicy{
-		"www.google.com":  {RequestsPerSecond: 3, BurstSize: 2},
-		"www.youtube.com": {RequestsPerSecond: 3, BurstSize: 2},
-	}
-
-	client := crlim.NewRateLimitedClient(policies)
-
-	req, _ := http.NewRequest("GET", "https://www.google.com", nil)
-	resp, err := client.Do(req)
+	// Load rate limit config
+	cfg, err := config.LoadConfig("config.json") // or "config.yaml"
 	if err != nil {
-		fmt.Println("Error:", err)
-	} else {
-		fmt.Println("Response:", resp.Status)
+		log.Fatal("Error loading config:", err)
 	}
-	var wg sync.WaitGroup
-	for i := range 10 {
-		wg.Add(1)
-		go func() {
-			_, err := client.Do(req)
-			if err != nil {
-				fmt.Printf("Request no:%d Error:%s \n", i, err)
-			} else {
-				fmt.Printf("Response no:%d Response status:%s \n", i, resp.Status)
-			}
-			wg.Done()
 
-		}()
+	// Initialize rate limiter
+	limiter := ratelimiter.NewRateLimiter(cfg)
+
+	// Create a rate-limited HTTP client
+	client := ratelimiter.NewRateLimitedClient(limiter)
+
+	// Example requests
+	urls := []string{
+		"https://api.example.com/v1/users",
+		"https://api.example.com/v1/orders",
+		"https://sub.example.com/data",
 	}
-	wg.Wait()
+
+	for _, url := range urls {
+		req, _ := http.NewRequest("GET", url, nil)
+		resp, err := client.Do(req)
+
+		if err != nil {
+			log.Printf("Request blocked by rate limiter for %s: %v\n", url, err)
+		} else {
+			log.Printf("Request successful for %s: %s\n", url, resp.Status)
+		}
+
+		time.Sleep(500 * time.Millisecond) // Simulate request intervals
+	}
 }
